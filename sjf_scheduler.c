@@ -6,7 +6,7 @@
 #include "pqueue.h"
 
 typedef struct _job_t job_t;
-typedef struct _meta_data meta_data;
+typedef struct _meta_t meta_t;
 
 struct _job_t {
         int id;
@@ -15,21 +15,21 @@ struct _job_t {
         int running_time;
 };
 
-struct _meta_data {
+struct _meta_t {
         char* name;
         int running_time;
 };
 
 void *meta_ctor(void *elem) {
-        meta_data* process = malloc(sizeof(meta_data));
-        meta_data* elem_m = (meta_data*)elem;
+        meta_t* process = malloc(sizeof(meta_t));
+        meta_t* elem_m = (meta_t*)elem;
         process->name = strdup(elem_m->name);
         process->running_time = elem_m->running_time;
         return process;
 }
 
 void meta_dtor(void *elem) {
-        meta_data* elem_m = (meta_data*)elem;
+        meta_t* elem_m = (meta_t*)elem;
         free(elem_m->name);
         elem_m->name = NULL;
         free(elem_m);
@@ -48,7 +48,7 @@ Vector* map_parser() {
                         bytesread = getline(&line, &buffer, stdin);
                         if(bytesread == -1)
                                 continue;
-                        meta_data* process = malloc(sizeof(meta_data));
+                        meta_t* process = malloc(sizeof(meta_t));
                         process->name = malloc(bytesread);
                         char* name_temp = process->name;
                         char* run_time = NULL;
