@@ -1,7 +1,7 @@
 OBJS_DIR = .objs
 
-EXENAME = basic
-OBJS = basic_scheduling.o vector.o
+EXENAME = scheduler
+OBJS = sjf_scheduler.o vector.o pqueue.o
 
 CC = clang
 WARNINGS = -Wall -Wextra -Werror -Wno-error=unused-parameter
