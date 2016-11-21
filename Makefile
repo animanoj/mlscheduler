@@ -1,13 +1,13 @@
 OBJS_DIR = .objs
 
 EXENAME = scheduler
-OBJS = sjf_scheduler.o vector.o pqueue.o
+OBJS = sjf_scheduler.o vector.o pqueue.o utils.o
 
 CC = clang
 WARNINGS = -Wall -Wextra -Werror -Wno-error=unused-parameter
-CFLAGS = -O2 $(WARNINGS) -g -std=c99 -c -MMD -MP -D_GNU_SOURCE
+CFLAGS = -O2 $(WARNINGS) -g -std=c99 -c -MMD -MP -D_GNU_SOURCE -pthread
 LD = clang
-LDFLAGS =
+LDFLAGS = -pthread
 
 all : $(EXENAME)
 

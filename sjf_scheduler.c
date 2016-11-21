@@ -1,118 +1,117 @@
+#include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <pthread.h>
+#include <time.h>
 
 #include "vector.h"
 #include "pqueue.h"
+#include "utils.h"
 
-typedef struct _job_t job_t;
-typedef struct _meta_t meta_t;
+priqueue_t pqueue;
+Vector* map;
+int running = 1;
+int jobs = 0;
+pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
 
-struct _job_t {
-        int id;
-        int priority;
-        int arrival_time;
-        int running_time;
-};
-
-struct _meta_t {
-        char* name;
-        int running_time;
-};
-
-void *meta_ctor(void *elem) {
-        meta_t* process = malloc(sizeof(meta_t));
-        meta_t* elem_m = (meta_t*)elem;
-        process->name = strdup(elem_m->name);
-        process->running_time = elem_m->running_time;
-        return process;
-}
-
-void meta_dtor(void *elem) {
-        meta_t* elem_m = (meta_t*)elem;
-        free(elem_m->name);
-        elem_m->name = NULL;
-        free(elem_m);
-        elem_m = NULL;
-        elem = NULL;
-}
-
-Vector* map_parser() {
-        Vector* map = Vector_create(meta_ctor, meta_dtor);
-        FILE* file = fopen("time_data.txt", "r");
-        if(file) {
-                char* line = NULL;
-                size_t buffer = 0;
-                ssize_t bytesread;
-                do {
-                        bytesread = getline(&line, &buffer, stdin);
-                        if(bytesread == -1)
-                                continue;
-                        meta_t* process = malloc(sizeof(meta_t));
-                        process->name = malloc(bytesread);
-                        char* name_temp = process->name;
-                        char* run_time = NULL;
-                        char* run_time_temp = NULL;
-                        char* line_temp = line;
-                        int input = 0;
-                        while(input < 2) {
-                                if(*line_temp == ' ' || *line_temp == '\n') {
-                                        line_temp++;
-                                        input++;
-                                        run_time = malloc(strlen(line_temp));
-                                        run_time_temp = run_time;
-                                }
-                                switch(input) {
-                                case 0:  *name_temp = *line_temp;
-                                        name_temp++;
-                                        break;
-                                case 1:  *run_time_temp = *line_temp;
-                                        run_time_temp++;
-                                        break;
-                                default: break;
-                                }
-                                line_temp++;
-                        }
-                        *run_time_temp = '\0';
-                        run_time_temp = NULL;
-                        *name_temp = '\0';
-                        name_temp = NULL;
-                        line_temp = NULL;
-                        process->running_time = atoi(run_time);
-                        free(run_time);
-                        run_time = NULL;
-                        process->name = realloc(process->name, strlen(process->name) + 1);
-                        Vector_append(map, process);
-                        meta_dtor(process);
-                        process = NULL;
-                } while(bytesread != -1);
-                fclose(file);
+void* scheduler_sjf(void* filename) {
+        while(1) {
+                usleep(1000);
+                pthread_mutex_lock(&m);
+                if(jobs == 0 && running) {
+                        pthread_mutex_unlock(&m);
+                        continue;
+                }
+                else if(jobs)
+                        jobs--;
+                else {
+                        pthread_mutex_unlock(&m);
+                        return NULL;
+                }
+                pthread_mutex_unlock(&m);
+                //meta_t* process = priqueue_poll(&pqueue);
+                pid_t child = fork();
+                if(child == -1) {
+                        fprintf(stderr, "Forking failed");
+                        return NULL;
+                }
+                else if(child == 0) {
+                        //execlp(, argv[4], NULL);
+                }
+                        // if(*answer) {
+                        //         v1_print_thread_result(id, username, answer, num_hash, getThreadCPUTime(), 0);
+                        //         pthread_mutex_lock(&m);
+                        //         successful++;
+                        //         pthread_mutex_unlock(&m);
+                        // }
+                        // else {
+                        //         v1_print_thread_result(id, username, answer, num_hash, getThreadCPUTime(), 1);
+                        //         pthread_mutex_lock(&m);
+                        //         failed++;
+                        //         pthread_mutex_unlock(&m);
+                        // }
         }
-        file = NULL;
-        return map;
-}
-
-int comparer_sjf(const void *a, const void *b) {
-        job_t* a_job = (job_t*) a;
-        job_t* b_job = (job_t*) b;
-        if(a_job->running_time < b_job->running_time)
-                return -1;
-        else if(a_job->running_time > b_job->running_time)
-                return 1;
-        else {
-                if(a_job->arrival_time < b_job->arrival_time)
-                        return -1;
-                else if(a_job->arrival_time > b_job->arrival_time)
-                        return 1;
-                else
-                        return 0;
-        }
-}
-
-void scheduler_sjf(char* filename) {
-
+        return NULL;
 }
 
 int main(int argc, char** argv) {
+        if(argc < 3) {
+                fprintf(stderr, "Usage: ./scheduler <file name> <thread count>\n");
+                return -1;
+        }
+        priqueue_init(&pqueue, comparer_sjf);
+        FILE* file = fopen(argv[1], "r");
+        if(!file) {
+                fprintf(stderr, "File not found\n");
+                return -1;
+        }
+        map = map_parser();
+        pthread_t threads[atoi(argv[2])];
+        for(int i = 0; i < atoi(argv[2]); i++)
+                pthread_create(&threads[i], NULL, scheduler_sjf, NULL);
+        char* line = NULL;
+        size_t buffer = 0;
+        ssize_t bytesread;
+        do {
+                bytesread = getline(&line, &buffer, file);
+                if(bytesread == -1)
+                        continue;
+                meta_t* process = malloc(sizeof(meta_t));
+                process->command = line;
+                process->arrival_time = time(NULL);
+                process->name = malloc(strlen(line + 1));
+                char* command_temp = process->name;
+                char* line_temp = line;
+                while(*line_temp != ' ' && *line_temp != '\0') {
+                        *command_temp = *line_temp;
+                        command_temp++;
+                        line_temp++;
+                }
+                *command_temp = '\0';
+                command_temp = NULL;
+                process->name = realloc(process->name, strlen(process->name) + 1);
+                line_temp = NULL;
+                int run_time = -1;
+                for(int i = 0; i < (int)Vector_size(map); i++) {
+                        meta_t* meta = Vector_get(map, i);
+                        if(strcmp(meta->name, process->name) == 0)
+                                run_time = meta->running_time;
+                }
+                process->running_time = run_time;
+                priqueue_offer(&pqueue, process);
+                line = NULL;
+                buffer = 0;
+                pthread_mutex_lock(&m);
+                jobs++;
+                pthread_mutex_unlock(&m);
+        } while(bytesread != -1);
+        free(line);
+        line = NULL;
+        pthread_mutex_lock(&m);
+        running = 0;
+        pthread_mutex_unlock(&m);
+        for(int i = 0; i < atoi(argv[2]); i++)
+                pthread_join(threads[i], NULL);
         return 0;
 }
