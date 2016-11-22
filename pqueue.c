@@ -1,5 +1,7 @@
 #include "pqueue.h"
+#include "utils.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 void priqueue_init(priqueue_t *q, int(*comparer)(const void *, const void *)) {
         q = malloc(sizeof(priqueue_t));
@@ -46,7 +48,7 @@ void* priqueue_poll(priqueue_t *q) {
         entry* result = q->head;
         q->head = q->head->next;
         q->size--;
-        return result;
+        return result->value;
 }
 
 int priqueue_size(priqueue_t *q) {

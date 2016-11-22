@@ -34,7 +34,7 @@ void* scheduler_sjf(void* arg) {
                 }
                 meta_t* process = (meta_t*)priqueue_poll(&pqueue);
                 pthread_mutex_unlock(&m);
-                fprintf(stderr, "%s\n", process->command);
+                fprintf(stderr, "%s", process->command);
                 size_t numtokens;
                 char c = ' ';
                 char** command_parsed = strsplit(process->command, &c, &numtokens);
@@ -96,6 +96,7 @@ int main(int argc, char** argv) {
                 bytesread = getline(&line, &buffer, file);
                 if(bytesread == -1)
                         continue;
+                fprintf(stderr, "%s", line);
                 meta_t* process = malloc(sizeof(meta_t));
                 process->command = line;
                 process->arrival_time = getTime();
@@ -121,7 +122,6 @@ int main(int argc, char** argv) {
                 }
                 process->running_time = run_time;
                 priqueue_offer(&pqueue, (void*)process);
-                process = NULL;
                 line = NULL;
                 buffer = 0;
                 pthread_mutex_lock(&m);
