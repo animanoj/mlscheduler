@@ -34,7 +34,7 @@ void* scheduler_sjf(void* arg) {
                 }
                 meta_t* process = (meta_t*)priqueue_poll(&pqueue);
                 pthread_mutex_unlock(&m);
-                fprintf(stderr, "%s", process->command);
+                fprintf(stderr, "%f\n", process->running_time);
                 size_t numtokens;
                 char c = ' ';
                 char** command_parsed = strsplit(process->command, &c, &numtokens);
@@ -53,7 +53,8 @@ void* scheduler_sjf(void* arg) {
                 int status;
                 waitpid(child, &status, 0);
                 time_process = getTime() - time_process;
-                if(process->running_time != -1) {
+                if(process->running_time != (double)-1) {
+                        fprintf(stderr, "a\n");
                         for(int i = 0; i < (int)Vector_size(map); i++) {
                                 meta_t* meta = Vector_get(map, i);
                                 if(strcmp(meta->name, process->name) == 0) {
@@ -96,7 +97,9 @@ int main(int argc, char** argv) {
                 bytesread = getline(&line, &buffer, file);
                 if(bytesread == -1)
                         continue;
-                fprintf(stderr, "%s", line);
+                if(line[strlen(line) - 1] == '\n') {
+                        line[strlen(line) - 1] = '\0';
+                }
                 meta_t* process = malloc(sizeof(meta_t));
                 process->command = line;
                 process->arrival_time = getTime();
