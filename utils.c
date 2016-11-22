@@ -9,16 +9,16 @@
 #include "pqueue.h"
 
 double getTime() {
-  struct timespec t;
-  clock_gettime(CLOCK_MONOTONIC, &t);
-  return t.tv_sec + 1e-9 * t.tv_nsec;
+        struct timespec t;
+        clock_gettime(CLOCK_MONOTONIC, &t);
+        return t.tv_sec + 1e-9 * t.tv_nsec;
 }
 
 void *meta_ctor(void *elem) {
         meta_t* process = malloc(sizeof(meta_t));
         meta_t* elem_m = (meta_t*)elem;
-        process->name = strdup(elem_m->name);
         process->command = strdup(elem_m->command);
+        process->name = strdup(elem_m->name);
         process->running_time = elem_m->running_time;
         process->arrival_time = elem_m->arrival_time;
         return process;
@@ -54,38 +54,38 @@ int comparer_sjf(const void *a, const void *b) {
 }
 
 char **strsplit(const char *str, const char *delim, size_t *numtokens) {
-  // copy the original string so that we don't overwrite parts of it
-  // (don't do this if you don't need to keep the old line,
-  // as this is less efficient)
-  char *s = strdup(str);
-  // these three variables are part of a very common idiom to
-  // implement a dynamically-growing array
-  size_t tokens_alloc = 1;
-  size_t tokens_used = 0;
-  char **tokens = calloc(tokens_alloc, sizeof(char *));
-  char *token, *strtok_ctx;
-  for (token = strtok_r(s, delim, &strtok_ctx); token != NULL;
-       token = strtok_r(NULL, delim, &strtok_ctx)) {
-    // check if we need to allocate more space for tokens
-    if (tokens_used == tokens_alloc) {
-      tokens_alloc *= 2;
-      tokens = realloc(tokens, tokens_alloc * sizeof(char *));
-    }
-    tokens[tokens_used++] = strdup(token);
-  }
-  // cleanup
-  if (tokens_used == 0) {
-    free(tokens);
-    tokens = NULL;
-  } else {
-    tokens = realloc(tokens, tokens_used * sizeof(char *));
-  }
-  *numtokens = tokens_used;
-  free(s);
-  // Adding a null terminator
-  tokens = realloc(tokens, sizeof(char *) * (tokens_used + 1));
-  tokens[tokens_used] = NULL;
-  return tokens;
+        // copy the original string so that we don't overwrite parts of it
+        // (don't do this if you don't need to keep the old line,
+        // as this is less efficient)
+        char *s = strdup(str);
+        // these three variables are part of a very common idiom to
+        // implement a dynamically-growing array
+        size_t tokens_alloc = 1;
+        size_t tokens_used = 0;
+        char **tokens = calloc(tokens_alloc, sizeof(char *));
+        char *token, *strtok_ctx;
+        for (token = strtok_r(s, delim, &strtok_ctx); token != NULL;
+             token = strtok_r(NULL, delim, &strtok_ctx)) {
+                // check if we need to allocate more space for tokens
+                if (tokens_used == tokens_alloc) {
+                        tokens_alloc *= 2;
+                        tokens = realloc(tokens, tokens_alloc * sizeof(char *));
+                }
+                tokens[tokens_used++] = strdup(token);
+        }
+        // cleanup
+        if (tokens_used == 0) {
+                free(tokens);
+                tokens = NULL;
+        } else {
+                tokens = realloc(tokens, tokens_used * sizeof(char *));
+        }
+        *numtokens = tokens_used;
+        free(s);
+        // Adding a null terminator
+        tokens = realloc(tokens, sizeof(char *) * (tokens_used + 1));
+        tokens[tokens_used] = NULL;
+        return tokens;
 }
 
 Vector* map_parser() {
@@ -141,4 +141,23 @@ Vector* map_parser() {
         }
         file = NULL;
         return map;
+}
+
+void Vector_to_file(Vector* map) {
+        FILE* file = fopen("time_data.txt", "w");
+        if(!file) {
+                fprintf(stderr, "File to write failed\n");
+                return;
+        }
+        for(int i = 0; i < (int)Vector_size(map); i++)
+        {
+                meta_t* line = Vector_get(map, i);
+                for(int j = 0; j < (int)strlen(line->name); j++) {
+                        fprintf(file, "%c", line->name[j]);
+                }
+                fprintf(file, "%c", ' ');
+                fprintf(file, "%f", line->running_time);
+                fprintf(file, "%c", '\n');
+        }
+        fclose(file);
 }

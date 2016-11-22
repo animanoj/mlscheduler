@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <time.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include "vector.h"
 #include "pqueue.h"
@@ -15,7 +17,8 @@ int running = 1;
 int jobs = 0;
 pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
 
-void* scheduler_sjf(void* filename) {
+void* scheduler_sjf(void* arg) {
+        (void) arg;
         while(1) {
                 usleep(1000);
                 pthread_mutex_lock(&m);
@@ -29,28 +32,44 @@ void* scheduler_sjf(void* filename) {
                         pthread_mutex_unlock(&m);
                         return NULL;
                 }
+                meta_t* process = (meta_t*)priqueue_poll(&pqueue);
                 pthread_mutex_unlock(&m);
-                //meta_t* process = priqueue_poll(&pqueue);
+                fprintf(stderr, "%s\n", process->command);
+                size_t numtokens;
+                char c = ' ';
+                char** command_parsed = strsplit(process->command, &c, &numtokens);
+                process = NULL;
+                double time_process = getTime();
                 pid_t child = fork();
                 if(child == -1) {
-                        fprintf(stderr, "Forking failed");
+                        fprintf(stderr, "Forking failed\n");
                         return NULL;
                 }
                 else if(child == 0) {
-                        //execlp(, argv[4], NULL);
+                        execvp(command_parsed[0], command_parsed);
+                        fprintf(stderr, "Exec failed\n");
+                        return NULL;
                 }
-                        // if(*answer) {
-                        //         v1_print_thread_result(id, username, answer, num_hash, getThreadCPUTime(), 0);
-                        //         pthread_mutex_lock(&m);
-                        //         successful++;
-                        //         pthread_mutex_unlock(&m);
-                        // }
-                        // else {
-                        //         v1_print_thread_result(id, username, answer, num_hash, getThreadCPUTime(), 1);
-                        //         pthread_mutex_lock(&m);
-                        //         failed++;
-                        //         pthread_mutex_unlock(&m);
-                        // }
+                int status;
+                waitpid(child, &status, 0);
+                time_process = getTime() - time_process;
+                if(process->running_time != -1) {
+                        for(int i = 0; i < (int)Vector_size(map); i++) {
+                                meta_t* meta = Vector_get(map, i);
+                                if(strcmp(meta->name, process->name) == 0) {
+                                        pthread_mutex_lock(&m);
+                                        meta->running_time = (meta->running_time + time_process) / 2;
+                                        pthread_mutex_unlock(&m);
+                                        break;
+                                }
+                        }
+                }
+                else {
+                        process->running_time = time_process;
+                        pthread_mutex_lock(&m);
+                        Vector_append(map, process);
+                        pthread_mutex_unlock(&m);
+                }
         }
         return NULL;
 }
@@ -79,7 +98,7 @@ int main(int argc, char** argv) {
                         continue;
                 meta_t* process = malloc(sizeof(meta_t));
                 process->command = line;
-                process->arrival_time = time(NULL);
+                process->arrival_time = getTime();
                 process->name = malloc(strlen(line + 1));
                 char* command_temp = process->name;
                 char* line_temp = line;
@@ -88,18 +107,21 @@ int main(int argc, char** argv) {
                         command_temp++;
                         line_temp++;
                 }
+                line_temp = NULL;
                 *command_temp = '\0';
                 command_temp = NULL;
                 process->name = realloc(process->name, strlen(process->name) + 1);
-                line_temp = NULL;
                 int run_time = -1;
                 for(int i = 0; i < (int)Vector_size(map); i++) {
                         meta_t* meta = Vector_get(map, i);
-                        if(strcmp(meta->name, process->name) == 0)
+                        if(strcmp(meta->name, process->name) == 0) {
                                 run_time = meta->running_time;
+                                break;
+                        }
                 }
                 process->running_time = run_time;
-                priqueue_offer(&pqueue, process);
+                priqueue_offer(&pqueue, (void*)process);
+                process = NULL;
                 line = NULL;
                 buffer = 0;
                 pthread_mutex_lock(&m);
@@ -113,5 +135,6 @@ int main(int argc, char** argv) {
         pthread_mutex_unlock(&m);
         for(int i = 0; i < atoi(argv[2]); i++)
                 pthread_join(threads[i], NULL);
+        Vector_to_file(map);
         return 0;
 }
