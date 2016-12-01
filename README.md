@@ -1,9 +1,13 @@
 # mlscheduler
 
-A scheduler that uses Machine Learning tools
+A scheduler that uses a simple Machine Learning algorithm and implements a Shortest Job First Scheduling policy
 
-There are an array of distinguishing features of a scheduler - what it optimizes for, how it is implemented and what it is used for. There are also some unique characteristics of a scheduler that break it apart from all the rest. Here I will list the characteristics of my scheduler:
+1. Vector and priority queue classes are used in the implementation, along with other utility functions
 
-1. Task Scheduler - this scheduler is a simple tasking scheduler that will be given an array of tasks (TBD - what details the array will contain) and schedule the tasks depending on the number resources available to be allocated to the tasks. (TBD - the nuance of the problem, eg. Analyzing emails to determine how committed TAs are to extra work and scheduling work according to emails)
+2. The project implements multi-threaded execution of an input file of instructions and logs the time taken for each instruction to complete. These times are used in future scheduling of the same instructions and the times are updated and averaged across multiple executions of instructions.
 
-2. Shortest Job First Scheduling - the tasks will be assigned resources according to the length of the task, to give best average response time. This algorithm has been selected to optimize latency over throughput.
+3. The use case of the project is in batch processing, where the same instructions must be executed a large number of times.
+
+Limitations:
+
+The scheduler does not take into account dependencies across instructions and due to the multi-threaded nature of the program, no instruction except the first instruction of the input file is guaranteed a position in the queue.
