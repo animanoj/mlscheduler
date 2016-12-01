@@ -4,7 +4,6 @@ typedef struct _meta_t meta_t;
 
 struct _meta_t {
         char* command;
-        char* name;
         double running_time;
         double arrival_time;
 };

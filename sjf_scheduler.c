@@ -33,31 +33,16 @@ void* scheduler_sjf(void* arg) {
                         return NULL;
                 }
                 meta_t* process = (meta_t*)priqueue_poll(&pqueue);
+                printf("taken : %s\n", process->command);
                 pthread_mutex_unlock(&m);
-                fprintf(stderr, "%f\n", process->running_time);
-                size_t numtokens;
-                char c = ' ';
-                char** command_parsed = strsplit(process->command, &c, &numtokens);
-                process = NULL;
                 double time_process = getTime();
-                pid_t child = fork();
-                if(child == -1) {
-                        fprintf(stderr, "Forking failed\n");
-                        return NULL;
-                }
-                else if(child == 0) {
-                        execvp(command_parsed[0], command_parsed);
-                        fprintf(stderr, "Exec failed\n");
-                        return NULL;
-                }
-                int status;
-                waitpid(child, &status, 0);
+                system(process->command);
+                fprintf(stderr, "done: %s\n", process->command);
                 time_process = getTime() - time_process;
                 if(process->running_time != (double)-1) {
-                        fprintf(stderr, "a\n");
                         for(int i = 0; i < (int)Vector_size(map); i++) {
                                 meta_t* meta = Vector_get(map, i);
-                                if(strcmp(meta->name, process->name) == 0) {
+                                if(strcmp(meta->command, process->command) == 0) {
                                         pthread_mutex_lock(&m);
                                         meta->running_time = (meta->running_time + time_process) / 2;
                                         pthread_mutex_unlock(&m);
@@ -71,6 +56,8 @@ void* scheduler_sjf(void* arg) {
                         Vector_append(map, process);
                         pthread_mutex_unlock(&m);
                 }
+                meta_dtor(process);
+                process = NULL;
         }
         return NULL;
 }
@@ -80,7 +67,7 @@ int main(int argc, char** argv) {
                 fprintf(stderr, "Usage: ./scheduler <file name> <thread count>\n");
                 return -1;
         }
-        priqueue_init(&pqueue, comparer_sjf);
+        priqueue_init(&pqueue);
         FILE* file = fopen(argv[1], "r");
         if(!file) {
                 fprintf(stderr, "File not found\n");
@@ -93,6 +80,7 @@ int main(int argc, char** argv) {
         char* line = NULL;
         size_t buffer = 0;
         ssize_t bytesread;
+        double total_time = getTime();
         do {
                 bytesread = getline(&line, &buffer, file);
                 if(bytesread == -1)
@@ -103,28 +91,18 @@ int main(int argc, char** argv) {
                 meta_t* process = malloc(sizeof(meta_t));
                 process->command = line;
                 process->arrival_time = getTime();
-                process->name = malloc(strlen(line + 1));
-                char* command_temp = process->name;
-                char* line_temp = line;
-                while(*line_temp != ' ' && *line_temp != '\0') {
-                        *command_temp = *line_temp;
-                        command_temp++;
-                        line_temp++;
-                }
-                line_temp = NULL;
-                *command_temp = '\0';
-                command_temp = NULL;
-                process->name = realloc(process->name, strlen(process->name) + 1);
                 int run_time = -1;
                 for(int i = 0; i < (int)Vector_size(map); i++) {
                         meta_t* meta = Vector_get(map, i);
-                        if(strcmp(meta->name, process->name) == 0) {
+                        if(strcmp(meta->command, process->command) == 0) {
                                 run_time = meta->running_time;
                                 break;
                         }
                 }
                 process->running_time = run_time;
+                pthread_mutex_lock(&m);
                 priqueue_offer(&pqueue, (void*)process);
+                pthread_mutex_unlock(&m);
                 line = NULL;
                 buffer = 0;
                 pthread_mutex_lock(&m);
@@ -138,6 +116,11 @@ int main(int argc, char** argv) {
         pthread_mutex_unlock(&m);
         for(int i = 0; i < atoi(argv[2]); i++)
                 pthread_join(threads[i], NULL);
+        total_time = getTime() - total_time;
         Vector_to_file(map);
+        Vector_destroy(map);
+        // priqueue_destroy(&pqueue);
+        fclose(file);
+        printf("Time taken: %f\n", total_time);
         return 0;
 }

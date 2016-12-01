@@ -9,7 +9,6 @@ typedef struct _entry
 */
 typedef struct _priqueue_t
 {
-    int(*comparer)(const void *, const void *);
     int size;
     entry* head;
 } priqueue_t;
@@ -24,7 +23,7 @@ typedef struct _priqueue_t
   @param comparer a function pointer that compares two elements.
   See also @ref comparer-page
  */
-void   priqueue_init     (priqueue_t *q, int(*comparer)(const void *, const void *));
+void   priqueue_init     (priqueue_t *q);
 
 /**
   Inserts the specified element into this priority queue.
