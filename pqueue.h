@@ -1,3 +1,7 @@
+/**
+ * @author Anirudh Manoj
+ */
+
 typedef struct _entry
 {
     void* value;

@@ -2,8 +2,8 @@
  * Vector
  */
 
-#ifndef __CS241_VECTOR_H__
-#define __CS241_VECTOR_H__
+#ifndef __VECTOR_H__
+#define __VECTOR_H__
 #include <stdlib.h>
 
 /**
@@ -149,4 +149,4 @@ void Vector_append(Vector *vector, void *elem);
 
 void Vector_swap(Vector *vector, size_t index_1, size_t index_2);
 
-#endif /* __CS241_VECTOR_H__ */
+#endif /* __VECTOR_H__ */
