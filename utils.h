@@ -15,3 +15,4 @@ int comparer_sjf(const void *a, const void *b);
 char **strsplit(const char *str, const char *delim, size_t *numtokens);
 Vector* map_parser();
 void Vector_to_file(Vector* map);
+void example_generator(long total_seconds, long upper_limit);

@@ -67,6 +67,7 @@ int main(int argc, char** argv) {
                 fprintf(stderr, "Usage: ./scheduler <file name> <thread count>\n");
                 return -1;
         }
+        //example_generator(50, 10);
         priqueue_init(&pqueue);
         FILE* file = fopen(argv[1], "r");
         if(!file) {

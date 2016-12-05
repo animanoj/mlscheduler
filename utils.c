@@ -99,3 +99,18 @@ void Vector_to_file(Vector* map) {
         }
         fclose(file);
 }
+
+void example_generator(long total_seconds, long upper_limit) {
+  FILE* file = fopen("example.in", "w");
+  if(!file) {
+    fprintf(stderr, "Example generator file open failed\n");
+    return;
+  }
+  time_t t;
+  srand((unsigned) time(&t));
+  while(total_seconds >= upper_limit) {
+    int r_num = rand() % upper_limit;
+    fprintf(file, "sleep %d\n", r_num);
+    total_seconds -= r_num;
+  }
+}
