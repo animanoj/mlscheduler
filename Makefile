@@ -23,4 +23,4 @@ $(EXENAME): $(OBJS:%.o=$(OBJS_DIR)/%-$(EXENAME).o)
 	$(LD) $^ $(LDFLAGS) -o $@
 
 clean :
-	rm -rf .objs $(EXENAME)
+	rm -rf .objs *.txt *.in $(EXENAME)

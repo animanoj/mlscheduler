@@ -15,12 +15,14 @@ priqueue_t pqueue;
 Vector* map;
 int running = 1;
 int jobs = 0;
+int total_jobs = 0;
+double total_waiting_time = 0;
 pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
 
 void* scheduler_sjf(void* arg) {
         (void) arg;
+        usleep(1000);
         while(1) {
-                usleep(1000);
                 pthread_mutex_lock(&m);
                 if(jobs == 0 && running) {
                         pthread_mutex_unlock(&m);
@@ -33,11 +35,12 @@ void* scheduler_sjf(void* arg) {
                         return NULL;
                 }
                 meta_t* process = (meta_t*)priqueue_poll(&pqueue);
-                printf("taken : %s\n", process->command);
+                printf("taken\t: %s\n", process->command);
+                total_waiting_time += (getTime() - process->arrival_time);
                 pthread_mutex_unlock(&m);
                 double time_process = getTime();
                 system(process->command);
-                fprintf(stderr, "done: %s\n", process->command);
+                fprintf(stderr, "done\t: %s\n", process->command);
                 time_process = getTime() - time_process;
                 if(process->running_time != (double)-1) {
                         for(int i = 0; i < (int)Vector_size(map); i++) {
@@ -107,6 +110,7 @@ int main(int argc, char** argv) {
                 buffer = 0;
                 pthread_mutex_lock(&m);
                 jobs++;
+                total_jobs++;
                 pthread_mutex_unlock(&m);
         } while(bytesread != -1);
         free(line);
@@ -121,6 +125,7 @@ int main(int argc, char** argv) {
         Vector_destroy(map);
         // priqueue_destroy(&pqueue);
         fclose(file);
-        printf("Time taken: %f\n", total_time);
+        printf("Average time taken per instruction: %f\n", (total_time / (double)total_jobs));
+        printf("Average waiting time per instruction: %f\n", (total_waiting_time / (double)total_jobs));
         return 0;
 }
